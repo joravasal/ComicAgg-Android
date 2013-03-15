@@ -21,3 +21,9 @@ local.properties
 
 # OAuth keys
 res/values/oauthSecrets.xml
+
+# Drawings
+*.png
+
+# Security files
+*~
