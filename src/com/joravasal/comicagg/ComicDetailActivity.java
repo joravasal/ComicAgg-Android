@@ -131,7 +131,7 @@ public class ComicDetailActivity extends FragmentActivity implements
 
 	public void changeImageSize(View v) {
 		((ComicDetailFragment) getSupportFragmentManager().findFragmentById(
-				R.id.comic_detail_container)).changeImageSize(v);
+				R.id.comic_detail_container)).openFullscreenStrip(v);
 	}
 
 	@Override

@@ -33,6 +33,7 @@ import org.w3c.dom.NodeList;
 import com.joravasal.comicaggdata.ComicListContent;
 import com.joravasal.tools.ComicAggOAuth2Api;
 import com.joravasal.tools.ComicListArrayAdapter;
+import com.joravasal.tools.GlobalVar;
 import com.joravasal.tools.XMLtools;
 
 import android.app.Activity;
@@ -373,12 +374,15 @@ public class ComicListFragment extends ListFragment {
 						.scope("write").callback("comicagg://oauth2")
 						.signatureType(SignatureType.Header).build();
 				OAuthRequest request;
+				String base_url;
+				if (GlobalVar.USING_DEV_PAGE)
+					base_url = getString(R.string.base_url_api_dev);
+				else
+					base_url = getString(R.string.base_url_api_www);
 				if (showUnread) {
-					request = new OAuthRequest(Verb.GET,
-							getString(R.string.base_url_api) + "unread/");
+					request = new OAuthRequest(Verb.GET, base_url + "unread/");
 				} else {
-					request = new OAuthRequest(Verb.GET,
-							getString(R.string.base_url_api) + "subscription/");
+					request = new OAuthRequest(Verb.GET, base_url + "subscription/");
 				}
 				serv.signRequest(mCallbacks.getAccToken(), request);
 				response = request.send();
@@ -421,13 +425,14 @@ public class ComicListFragment extends ListFragment {
 		 */
 		@Override
 		protected void onPostExecute(Document doc) {
+			View v = getActivity().findViewById(R.id.loadingList);
 			if (doc == null) {
 				Toast.makeText(getActivity(),
 						getString(R.string.toast_error_on_xml_list),
 						Toast.LENGTH_LONG).show();
 				Log.e(TAG, "The XML from the API has given null content");
 				changeListTitle("ERR", showUnread);
-				View v = getActivity().findViewById(R.id.loadingList);
+				
 				if (v != null) {
 					v.setVisibility(View.GONE);
 				}
@@ -461,10 +466,10 @@ public class ComicListFragment extends ListFragment {
 			unread_count = length;
 			changeListTitle(Integer.toString(length), showUnread);
 			Log.d(TAG, "Load comics onto listadapter");
-			View v1 = getActivity().findViewById(R.id.loadingList);
+			
 			View v2 = getActivity().findViewById(R.id.unread_comic_list);
-			if (v1 != null && v2 != null) {
-				v1.setVisibility(View.GONE);
+			if (v != null && v2 != null) {
+				v.setVisibility(View.GONE);
 				v2.setVisibility(View.VISIBLE);
 			}
 			setListAdapter(new ComicListArrayAdapter(getActivity(),

@@ -37,6 +37,7 @@ import com.joravasal.comicaggdata.ComicListContent;
 import com.joravasal.comicaggdata.ComicListContent.ComicItem;
 import com.joravasal.comicaggdata.ComicStripsContent;
 import com.joravasal.tools.ComicAggOAuth2Api;
+import com.joravasal.tools.GlobalVar;
 import com.joravasal.tools.XMLtools;
 
 import android.annotation.SuppressLint;
@@ -64,6 +65,8 @@ import android.widget.LinearLayout;
 import android.widget.ShareActionProvider;
 import android.widget.TextView;
 import android.widget.Toast;
+
+//TODO if a comic is pressed, and back key is pressed right after, before the comic is loaded, trying to open the comic again before it finished loading will crash the app
 
 /**
  * <p>
@@ -149,7 +152,7 @@ public class ComicDetailFragment extends Fragment {
 				getActivity().setTitle(COMICAGG + comicItem.toString());
 			}
 		}
-		
+
 		setHasOptionsMenu(true);
 	}
 
@@ -199,21 +202,19 @@ public class ComicDetailFragment extends Fragment {
 			unread = ComicStripsContent.ITEMS.size();
 		}
 		for (int i = 1; i < unread; i++) {
-			// HorizontalScrollView hsv = new
-			// HorizontalScrollView(getActivity());
-
 			ImageView iv = new ImageView(getActivity());
 			iv.setId(Integer.MAX_VALUE - i);
 			iv.setPadding(16, 16, 16, 0);
 			iv.setContentDescription(getString(R.string.strip_description));
 			iv.setAdjustViewBounds(true);
+
 			iv.setOnClickListener(new OnClickListener() {
 				@Override
 				public void onClick(View v) {
-					changeImageSize(v);
+					// TODO check if there is need of opening? or always open?
+					openFullscreenStrip(v);
 				}
 			});
-			// hsv.addView(iv, layoutParams);
 
 			TextView tv = new TextView(getActivity());
 			tv.setId(i);
@@ -233,7 +234,7 @@ public class ComicDetailFragment extends Fragment {
 		if (savedInstanceState != null
 				&& savedInstanceState.containsKey(VERTICAL_SCROLLING_POSITION)
 				&& VERSION.SDK_INT >= 14) {
-			rootView.findViewById(R.id.comic_scrollView).scrollTo(0, 
+			rootView.findViewById(R.id.comic_scrollView).scrollTo(0,
 					savedInstanceState.getInt(VERTICAL_SCROLLING_POSITION));
 		}
 		return rootView;
@@ -246,8 +247,8 @@ public class ComicDetailFragment extends Fragment {
 		outState.putString("unreadcount", comicItem.unreadCount);
 		outState.putString("comicname", comicItem.name);
 		outState.putString("comicurl", comicItem.url);
-		outState.putInt(VERTICAL_SCROLLING_POSITION,
-				getActivity().findViewById(R.id.comic_scrollView).getScrollY());
+		outState.putInt(VERTICAL_SCROLLING_POSITION, getActivity()
+				.findViewById(R.id.comic_scrollView).getScrollY());
 	}
 
 	@Override
@@ -297,36 +298,28 @@ public class ComicDetailFragment extends Fragment {
 	}
 
 	/**
+	 * <p>
+	 * This function will create a new activity that shows the strip comics full
+	 * size. The activity is {@link FullScreenStripPagerActivity}, which allows
+	 * to move between all the strips in the comic.
+	 * </p>
 	 * 
 	 * @param v
-	 *            The imageView that calls the function when a click event
-	 *            happens on it.
+	 *            The imageView (the comic strip) that calls the function when a
+	 *            click event happens on it.
 	 */
-	public void changeImageSize(View v) {
+	public void openFullscreenStrip(View v) {
 		Log.d(TAG, "Opening new activity with full screen image");
 		int viewID = 0;
 		if (v.getId() != R.id.comic0) {
 			viewID = Integer.MAX_VALUE - v.getId();
 		}
-		startActivity(new Intent(getActivity(), StripFullscreenActivity.class)
-				.putExtra(STRIP_IMAGE_ID, viewID));
-		
-		//((ImageView) v).setScaleType(ScaleType.CENTER);
-		
-		
-		// scale = 1.0
-		// if(v.isZoomed())
-		// {
-		// scale = screen_width / v.getWidth();
-		// v.setZoomed(false);
-		// }
-		// else
-		// v.setZoomed(true);
-		// TODO: Open a window on top with webview and full image size.
-		// v.setScaleY((float) 0.5);
-		// v.setScaleX((float) 0.5);
-		// v.getParent().invalidateChild(v)?
-		// ((ImageView) v).setLayoutParams(new LayoutParams(100, 100));
+//		startActivity(new Intent(getActivity(),
+//				FullScreenStripPagerActivity.class).putExtra(STRIP_IMAGE_ID,
+//				viewID));
+		startActivity(new Intent(getActivity(),
+				FSStripWebViewPagerActivity.class).putExtra(STRIP_IMAGE_ID,
+				viewID));
 	}
 
 	/**
@@ -403,14 +396,19 @@ public class ComicDetailFragment extends Fragment {
 						.scope("write").callback("comicagg://oauth2")
 						.signatureType(SignatureType.Header).build();
 				OAuthRequest request;
+
+				String base_url;
+				if (GlobalVar.USING_DEV_PAGE)
+					base_url = getString(R.string.base_url_api_dev);
+				else
+					base_url = getString(R.string.base_url_api_www);
+
 				if (unread != 0) {
-					request = new OAuthRequest(Verb.GET,
-							getString(R.string.base_url_api) + "unread/" + id
-									+ "/");
+					request = new OAuthRequest(Verb.GET, base_url + "unread/"
+							+ id + "/");
 				} else {
-					request = new OAuthRequest(Verb.GET,
-							getString(R.string.base_url_api) + "comic/" + id
-									+ "/");
+					request = new OAuthRequest(Verb.GET, base_url + "comic/"
+							+ id + "/");
 				}
 				serv.signRequest(mCallbacks.getAccToken(), request);
 				response = request.send();
@@ -452,7 +450,6 @@ public class ComicDetailFragment extends Fragment {
 				Element e = (Element) nodes.item(i);
 
 				Bitmap bm = null;
-				// TODO: check image size, if it's too big make it smaller
 				try {
 					InputStream in = new java.net.URL(e.getAttributes()
 							.getNamedItem("imageurl").getNodeValue())
@@ -623,8 +620,13 @@ public class ComicDetailFragment extends Fragment {
 						.apiSecret(getString(R.string.client_secret))
 						.scope("write").callback("comicagg://oauth2")
 						.signatureType(SignatureType.Header).build();
-				OAuthRequest request = new OAuthRequest(Verb.POST,
-						getString(R.string.base_url_api) + "comic/" + id + "/");
+				String base_url;
+				if (GlobalVar.USING_DEV_PAGE)
+					base_url = getString(R.string.base_url_api_dev);
+				else
+					base_url = getString(R.string.base_url_api_www);
+				OAuthRequest request = new OAuthRequest(Verb.POST, base_url
+						+ "comic/" + id + "/");
 				request.addBodyParameter("vote", Integer.toString(vote));
 				serv.signRequest(mCallbacks.getAccToken(), request);
 				response = request.send();

@@ -33,17 +33,25 @@ import org.scribe.extractors.JsonTokenExtractor;
 
 public class ComicAggOAuth2Api extends DefaultApi20 {
 	
-	private static final String AUTHORIZE_URL = 
+	private static final String AUTHORIZE_URL_DEV = 
 			"https://dev.comicagg.com/oauth2/authorize/?client_id=%s&response_type=token&state=%s&scope=%s";
-	  
+	private static final String AUTHORIZE_URL_WWW = 
+			"https://www.comicagg.com/oauth2/authorize/?client_id=%s&response_type=token&state=%s&scope=%s";
+	
 	@Override
 	public String getAccessTokenEndpoint() {
-		return "https://dev.comicagg.com/oauth2/access_token/";
+		if(GlobalVar.USING_DEV_PAGE)
+			return "https://dev.comicagg.com/oauth2/access_token/";
+		else
+			return "https://www.comicagg.com/oauth2/access_token/";
 	}
 
 	@Override
 	public String getAuthorizationUrl(OAuthConfig conf) {
-		return String.format(AUTHORIZE_URL, conf.getApiKey(), "test", conf.getScope());
+		if(GlobalVar.USING_DEV_PAGE)
+			return String.format(AUTHORIZE_URL_DEV, conf.getApiKey(), "test", conf.getScope());
+		else
+			return String.format(AUTHORIZE_URL_WWW, conf.getApiKey(), "test", conf.getScope());
 	}
 
 	@Override

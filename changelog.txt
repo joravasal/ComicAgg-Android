@@ -1,4 +1,17 @@
  ========
+= V0.2.6 =
+ ========
+· Now the full screen images are shown with WebView.
+· Animated gifs are played in full screen.
+· Zoom in full screen.
+
+ ========
+= V0.2.5 =
+ ========
+· Now you can scroll the comic strips when they are shown full size,
+  and you can go to the next one by sliding to the sides.
+
+ ========
 = V0.2.4 =
  ========
 · The management and refreshing of the comic list (when marking as read some comics) works fine now in any screen size.
